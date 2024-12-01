@@ -664,8 +664,6 @@ uint8_t rx_status = RX_STATUS_INVALID; // this also signals that a frame was rec
 // MAIN routine
 //*******************************************************
 
-uint16_t doSysTask2;
-
 uint16_t tx_tick;
 bool isInTimeGuard;
 bool doPreTransmit;
@@ -764,7 +762,6 @@ RESTARTCONTROLLER
     tick_1hz = 0;
     tick_1hz_commensurate = 0;
     doSysTask = 0; // helps in avoiding too short first loop
-    doSysTask2 = 0;
 INITCONTROLLER_END
 
     //-- SysTask handling
@@ -780,56 +777,49 @@ INITCONTROLLER_END
 
         DECc(tx_tick, SYSTICK_DELAY_MS(Config.frame_rate_ms));
 
-        if (tx_tick == 2) {
+        if (tx_tick == 1) {
             isInTimeGuard = true; // prevent extra work
         }
-        if (tx_tick == 1) {
+        if (tx_tick == 0) {
             doPreTransmit = true; // trigger next cycle
             pretransmit_tstamp_us = micros16();
-        }
-        if (tx_tick == 0) {
-//            crsf.TelemetryStart();
-//            whileTransmit.Trigger();
         }
 
         link_task_tick_ms();
 
-        if (!doPreTransmit) doSysTask2++;
-    }
-    if (doSysTask2) {
-        doSysTask2--;
+        if (!doPreTransmit) {
+            leds.Tick_ms(connected()); // can take long
 
-        leds.Tick_ms(connected()); // can take long
+            DECc(tick_1hz, SYSTICK_DELAY_MS(1000));
 
-        DECc(tick_1hz, SYSTICK_DELAY_MS(1000));
-
-        if (!tick_1hz) {
-            if (Setup.Tx[Config.ConfigId].Buzzer == BUZZER_RX_LQ && connect_occured_once) {
-                buzzer.BeepLQ(stats.received_LQ_rc);
+            if (!tick_1hz) {
+                if (Setup.Tx[Config.ConfigId].Buzzer == BUZZER_RX_LQ && connect_occured_once) {
+                    buzzer.BeepLQ(stats.received_LQ_rc);
+                }
             }
-        }
 
-        bind.Tick_ms();
-        disp.Tick_ms(); // can take long
-        fan.Tick_ms();
+            bind.Tick_ms();
+            disp.Tick_ms(); // can take long
+            fan.Tick_ms();
 
-        if (!tick_1hz) {
-            dbg.puts(".");
-/*            dbg.puts("\nTX: ");
-            dbg.puts(u8toBCD_s(stats.GetLQ_serial()));
-            dbg.puts("(");
-            dbg.puts(u8toBCD_s(stats.frames_received.GetLQ())); dbg.putc(',');
-            dbg.puts(u8toBCD_s(stats.valid_frames_received.GetLQ()));
-            dbg.puts("),");
-            dbg.puts(u8toBCD_s(stats.received_LQ_rc)); dbg.puts(", ");
+            if (!tick_1hz) {
+                dbg.puts(".");
+/*                dbg.puts("\nTX: ");
+                dbg.puts(u8toBCD_s(stats.GetLQ_serial()));
+                dbg.puts("(");
+                dbg.puts(u8toBCD_s(stats.frames_received.GetLQ())); dbg.putc(',');
+                dbg.puts(u8toBCD_s(stats.valid_frames_received.GetLQ()));
+                dbg.puts("),");
+                dbg.puts(u8toBCD_s(stats.received_LQ_rc)); dbg.puts(", ");
 
-            dbg.puts(s8toBCD_s(stats.last_rssi1)); dbg.putc(',');
-            dbg.puts(s8toBCD_s(stats.received_rssi)); dbg.puts(", ");
-            dbg.puts(s8toBCD_s(stats.last_snr1)); dbg.puts("; ");
+                dbg.puts(s8toBCD_s(stats.last_rssi1)); dbg.putc(',');
+                dbg.puts(s8toBCD_s(stats.received_rssi)); dbg.puts(", ");
+                dbg.puts(s8toBCD_s(stats.last_snr1)); dbg.puts("; ");
 
-            dbg.puts(u16toBCD_s(stats.bytes_transmitted.GetBytesPerSec())); dbg.puts(", ");
-            dbg.puts(u16toBCD_s(stats.bytes_received.GetBytesPerSec())); dbg.puts("; "); */
-        }
+                dbg.puts(u16toBCD_s(stats.bytes_transmitted.GetBytesPerSec())); dbg.puts(", ");
+                dbg.puts(u16toBCD_s(stats.bytes_received.GetBytesPerSec())); dbg.puts("; "); */
+            }
+        } // end of if (!doPreTransmit)
     }
 
     //-- SX handling
@@ -846,7 +836,7 @@ INITCONTROLLER_END
 
     case LINK_STATE_TRANSMIT_SEND: {
         uint16_t dt = micros16() - pretransmit_tstamp_us;
-        if (dt < 500) break;
+        if (dt < 750) break;
         isInTimeGuard = false;
         rfpower.Update();
         fhss.HopToNext();
