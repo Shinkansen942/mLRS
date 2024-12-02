@@ -66,7 +66,7 @@ class tTxMavlink
     fmav_status_t status_link_in; // status for link in parser
     uint8_t buf_link_in[MAVLINK_BUF_SIZE]; // buffer for link in parser
     fmav_status_t status_serial_out; // status for serial out (ser and ser2) messages
-    tFifo<char,512> fifo_link_in; // size ??? in principle should need to hold only one OTA payload
+    tFifo<char,128> fifo_link_in; // should need to only hold one OTA payload
     void parse_link_in_serial_out(void);
 
     // fields for ser/ser2 in -> parser -> link out
