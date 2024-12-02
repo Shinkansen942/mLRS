@@ -106,6 +106,11 @@ tMBridge mbridge;
 //-------------------------------------------------------
 // MBridge half-duplex interface, used for radio <-> mLRS tx module
 
+#ifdef JR_PIN5_O3
+  #pragma GCC push_options
+  #pragma GCC optimize ("O3")
+#endif
+
 // to avoid error: ISO C++ forbids taking the address of a bound member function to form a pointer to member function
 void mbridge_uart_rx_callback(uint8_t c) { mbridge.uart_rx_callback(c); }
 void mbridge_uart_tc_callback(void) { mbridge.uart_tc_callback(); }
@@ -231,6 +236,10 @@ void tMBridge::parse_nextchar(uint8_t c)
         break;
     }
 }
+
+#ifdef JR_PIN5_O3
+  #pragma GCC pop_options
+#endif
 
 
 //-------------------------------------------------------

@@ -50,6 +50,11 @@
 extern volatile uint32_t millis32(void);
 
 
+#if defined __GNUC__ && !(defined ESP8266 || defined ESP32)
+#define JR_PIN5_O3 // flash cost is ca 1 kb
+#endif
+
+
 //-------------------------------------------------------
 // Interface Implementation
 // the uart used for JR pin5 must be UART_UARTx
@@ -64,6 +69,11 @@ void (*uart_tc_callback_ptr)(void) = &uart_tc_callback_dummy;
 #define UART_TC_CALLBACK()          (*uart_tc_callback_ptr)()
 
 #include "../modules/stm32ll-lib/src/stdstm32-uart.h"
+
+#ifdef JR_PIN5_O3
+  #pragma GCC push_options
+  #pragma GCC optimize ("O3")
+#endif
 
 // not available in stdstm32-uart.h, used for half-duplex mode
 void uart_tx_putc_totxbuf(char c)
@@ -90,6 +100,10 @@ void uart_rx_putc_torxbuf(uint8_t c)
         uart_rxwritepos = next;
     }
 }
+
+#ifdef JR_PIN5_O3
+  #pragma GCC pop_options
+#endif
 
 
 class tPin5BridgeBase
@@ -252,6 +266,11 @@ void tPin5BridgeBase::TelemetryStart(void)
 // Interface to the uart hardware peripheral used for the bridge
 // called in isr context
 
+#ifdef JR_PIN5_O3
+  #pragma GCC push_options
+  #pragma GCC optimize ("O3")
+#endif
+
 void tPin5BridgeBase::pin5_tx_enable(bool enable_flag)
 {
     if (enable_flag) {
@@ -338,6 +357,10 @@ void tPin5BridgeBase::uart_tc_callback(void)
     pin5_tx_enable(false); // switches on rx
     state = STATE_IDLE;
 }
+
+#ifdef JR_PIN5_O3
+  #pragma GCC pop_options
+#endif
 
 
 //-------------------------------------------------------
